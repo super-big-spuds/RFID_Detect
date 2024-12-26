@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFID 標籤管理系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .write-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .read-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: #f44336;
+        }
+        .success {
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RFID 標籤管理系統</h1>
+        
+        <div class="input-group">
+            <label for="productId">產品 ID (13碼十六進位)：</label>
+            <input type="text" id="productId" 
+                   placeholder="請輸入13碼產品ID" 
+                   maxlength="13"
+                   pattern="[0-9A-Fa-f]{13}">
+        </div>
+
+        <div class="button-group">
+            <button class="write-btn" onclick="writeTag()">寫入標籤</button>
+            <button class="read-btn" onclick="readTag()">讀取標籤</button>
+        </div>
+
+        <div class="result" id="result">
+            等待操作...
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:5000';
+
+        function formatResult(data) {
+            if (data.error) {
+                return `錯誤：${data.error}`;
+            }
+            
+            if (data.data) {
+                return `操作成功：
+標籤 ID：${data.data.tag_id}
+產品 ID：${data.data.product_id}
+日期：${data.data.year}年${data.data.month}月${data.data.day}日
+${data.data.raw_data ? '原始資料：' + data.data.raw_data : ''}
+${data.data.epc ? 'EPC：' + data.data.epc : ''}`;
+            }
+            
+            return '未知回應格式';
+        }
+
+        async function writeTag() {
+            const productId = document.getElementById('productId').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!productId || productId.length !== 13 || !/^[0-9A-Fa-f]{13}$/.test(productId)) {
+                resultDiv.innerHTML = '錯誤：產品ID必須是13位十六進位數';
+                resultDiv.className = 'result error';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '正在寫入...';
+                const response = await fetch(`${API_BASE_URL}/write`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ product_id: productId })
+                });
+
+                const data = await response.json();
+                resultDiv.innerHTML = formatResult(data);
+                resultDiv.className = data.error ? 'result error' : 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `錯誤：${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function readTag() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '正在讀取...';
+                const response = await fetch(`${API_BASE_URL}/read`);
+                const data = await response.json();
+                resultDiv.innerHTML = formatResult(data);
+                resultDiv.className = data.error ? 'result error' : 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `錯誤：${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
