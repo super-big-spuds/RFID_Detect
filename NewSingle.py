@@ -240,12 +240,14 @@ UUID (4碼): {self.tag_id[:4]}
         if len(data) > 3 and data[0] == 0xBB:
             if data[1] == 0x02:  # 標籤讀取回應
                 if len(data) >= 21:  # 確保有足夠的數據長度
-                    # 修改取值範圍，確保包含完整的數據（包括日期）
-                    epc_data = data[7:21]  # 現在取14個bytes，確保包含所有需要的數據
-                    parsed_data = self.parse_epc_data(epc_data)
-                    if parsed_data:
-                        self.text_display.append("\n解析資料:")
-                        self.text_display.append(parsed_data)
+                    # 修改取值範圍，確保包含完整的數據（包括日期
+                    for i in range(0, len(data), 26):
+                        epc_data = data[i+7:i+21]
+                        if(len(epc_data) > 0):
+                            parsed_data = self.parse_epc_data(epc_data)
+                            if parsed_data:
+                                self.text_display.append("\n解析資料:")
+                                self.text_display.append(parsed_data)
                     self.status_label.setText("狀態：讀取成功")
                 else:
                     self.text_display.append(f"數據長度不足：收到 {len(data)} bytes")

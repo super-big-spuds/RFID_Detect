@@ -50,15 +50,12 @@ class RFIDController:
             day_dec = int(day, 16)            # 日期轉換
 
             return {
-                "success": True,
-                "data": {
-                    "tag_id": tag_id,
-                    "product_id": product_id,
-                    "year": year_dec,
-                    "month": month_dec,
-                    "day": day_dec,
-                    "raw_data": actual_data
-                }
+                "tag_id": tag_id,
+                "product_id": product_id,
+                "year": year_dec,
+                "month": month_dec,
+                "day": day_dec,
+                "raw_data": actual_data
             }
                 
         except Exception as e:
@@ -79,8 +76,16 @@ class RFIDController:
                 # 檢查回應格式
                 if len(data) > 3 and data[0] == 0xBB and data[1] == 0x02:
                     if len(data) >= 21:
-                        epc_data = data[7:21]
-                        return self.parse_epc_data(epc_data)
+                        all_data = []
+                        for i in range(0, len(data), 26):
+                            epc_data = data[i+7:i+21]
+                            item_data = self.parse_epc_data(epc_data)
+                            all_data.append(item_data)
+                            
+                        return {
+                            "Success": True,
+                            "data": all_data
+                        }
                     
             return {"error": "無法讀取標籤數據"}
             
